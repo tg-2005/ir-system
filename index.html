@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Paper Search - Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .hero { background: white; border-bottom: 1px solid #e9ecef; padding: 2rem 0; margin-bottom: 2rem; }
+        .paper-card { border-radius: 8px; border: 1px solid #e2e8f0; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .paper-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .badge-original { background-color: #64748b; color: white; }
+        .badge-semantic { background-color: #0d6efd; color: white; }
+        .rank-pill { font-size: 0.85rem; font-weight: 600; padding: 0.35rem 0.65rem; border-radius: 20px; }
+        .score-pill { font-size: 0.78rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="container">
+        <h2 class="fw-bold mb-1">🔍 Academic Paper Search Engine</h2>
+        <p class="text-muted mb-3">Comparing <strong>Baseline (arXiv Keyword Match)</strong> vs <strong>Our Model (MiniLM + FAISS Semantic Re-ranking)</strong></p>
+        
+        <form method="POST" class="row g-2">
+            <div class="col-md-9">
+                <input type="text" class="form-control form-control-lg" name="query" value="{{ query }}" placeholder="e.g. transformers for medical image segmentation" required>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-lg w-100">Compare Results</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container mb-5">
+    {% if query %}
+        <div class="alert alert-info py-2 px-3 mb-4">
+            Showing comparison for query: <strong>"{{ query }}"</strong>
+        </div>
+
+        <div class="row g-4">
+            <!-- ── LEFT: Original arXiv Keyword Results ── -->
+            <div class="col-md-6">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0 fw-bold text-secondary">
+                        <span class="badge badge-original me-1">Baseline</span> Original arXiv Search
+                    </h5>
+                    <small class="text-muted">Ranked by Keyword Match</small>
+                </div>
+
+                {% for paper in original_results %}
+                    <div class="card paper-card mb-3 shadow-sm bg-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-secondary rank-pill">Rank #{{ paper.original_rank }}</span>
+                                <a href="{{ paper.url }}" class="btn btn-sm btn-outline-secondary" target="_blank">PDF ↗</a>
+                            </div>
+                            <h6 class="card-title fw-bold text-dark mb-2">{{ paper.title }}</h6>
+                            <p class="card-text text-muted small" style="display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">
+                                {{ paper.summary }}
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No papers found for this query.</p>
+                {% endfor %}
+            </div>
+
+            <!-- ── RIGHT: Our Semantic Re-ranking ── -->
+            <div class="col-md-6">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="mb-0 fw-bold text-primary">
+                        <span class="badge badge-semantic me-1">Our System</span> Semantic Search (FAISS)
+                    </h5>
+                    <small class="text-muted">MiniLM 384-dim Embeddings</small>
+                </div>
+
+                {% for paper in semantic_results %}
+                    <div class="card paper-card mb-3 shadow-sm bg-white border-primary border-opacity-25">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="badge bg-primary rank-pill">Rank #{{ paper.semantic_rank }}</span>
+                                    {% if paper.original_rank != paper.semantic_rank %}
+                                        <span class="badge bg-light text-dark border ms-1" style="font-size:0.75rem;">
+                                            was arXiv #{{ paper.original_rank }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border ms-1" style="font-size:0.75rem;">
+                                            same as arXiv
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <span class="score-pill">Sim: {{ paper.similarity_score }}</span>
+                                    <a href="{{ paper.url }}" class="btn btn-sm btn-outline-primary ms-1" target="_blank">PDF ↗</a>
+                                </div>
+                            </div>
+                            <h6 class="card-title fw-bold text-dark mb-2">{{ paper.title }}</h6>
+                            <p class="card-text text-muted small mb-0">
+                                <strong>AI Summary:</strong> {{ paper.short_summary }}
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No semantic results.</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 text-muted">
+            <p class="lead">Enter a scientific research query above to see the comparison.</p>
+            <p class="small">Try: <em>"deep learning medical diagnosis"</em>, <em>"quantum computing cryptography"</em>, or <em>"reinforcement learning robotics"</em></p>
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>
